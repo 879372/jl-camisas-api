@@ -3,6 +3,7 @@ from core.models import TimestampMixin
 from clientes.models import Cliente
 from produtos.models import Produto
 from django.conf import settings
+from django.db.models import Sum
 
 class Pedido(TimestampMixin):
     STATUS_CHOICES = (
@@ -23,9 +24,14 @@ class Pedido(TimestampMixin):
     status_pagamento = models.CharField(max_length=30, choices=STATUS_PAG_CHOICES, default='pendente')
     valor_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     valor_pago = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    data_entrega_prevista = models.DateTimeField(null=True, blank=True)
+    data_entrega_prevista = models.DateField(null=True, blank=True)
     observacoes = models.TextField(null=True, blank=True)
     observacoes_internas = models.TextField(null=True, blank=True)
+
+    def recalculate_total(self):
+        total = self.itens.aggregate(total=Sum('valor_total'))['total'] or 0
+        self.valor_total = total
+        self.save()
 
     def __str__(self):
         return self.numero
@@ -38,6 +44,16 @@ class PedidoItem(models.Model):
     valor_unitario = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     valor_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     especificacoes = models.JSONField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.valor_total = (self.quantidade or 0) * (self.valor_unitario or 0)
+        super().save(*args, **kwargs)
+        # Recalculate parent order total
+        if self.pedido:
+            # We use a signal-like approach or just call the method
+            # To avoid recursion if recalculate_total calls save()
+            total = self.pedido.itens.aggregate(total=Sum('valor_total'))['total'] or 0
+            Pedido.objects.filter(id=self.pedido.id).update(valor_total=total)
 
 class PedidoArquivo(models.Model):
     pedido = models.ForeignKey(Pedido, related_name='arquivos', on_delete=models.CASCADE)

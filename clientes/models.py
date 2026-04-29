@@ -18,6 +18,7 @@ class Cliente(TimestampMixin):
     bairro = models.CharField(max_length=100, null=True, blank=True)
     cidade = models.CharField(max_length=100, null=True, blank=True)
     uf = models.CharField(max_length=2, null=True, blank=True)
+    data_nascimento = models.DateField(null=True, blank=True)
     observacoes = models.TextField(null=True, blank=True)
 
     def __str__(self):
