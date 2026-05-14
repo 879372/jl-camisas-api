@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/v1/', include('produtos.urls')),
     path('api/v1/', include('pedidos.urls')),
     path('api/v1/', include('financeiro.urls')),
+    path('api/v1/orcamento-publico/', include('orcamento.urls')),
 ]
