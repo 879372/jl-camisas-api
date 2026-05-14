@@ -13,6 +13,8 @@ ENV/
 # Database
 db.sqlite3
 *.sqlite3
+.env
+env
 
 # Logs
 *.log
